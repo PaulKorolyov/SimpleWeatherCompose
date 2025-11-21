@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Simple Weather Compose</string>
+    <string name="error_no_internet">Не удалось загрузить данные.\\nПроверьте интернет.</string>
+    <string name="reload">Перезагрузить</string>
+    <string name="no_data">Нет данных</string>
+    <string name="error">Ошибка</string>
+    <string name="repeat">Повторить</string>
+    <string name="cancel">Отменить</string>
+    <string name="current">Текущая</string>
+    <string name="hourly">Почасовая</string>
+    <string name="forecast3">Прогноз (3 дня)</string>
+    <string name="city">Москва</string>
+    <string name="updated">Обновлено</string>
+</resources>

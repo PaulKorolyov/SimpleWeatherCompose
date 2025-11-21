@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -135,7 +137,7 @@ object RetrofitClient {
 sealed class WeatherUiState {
     object Loading : WeatherUiState()
     data class Success(val data: WeatherResponse) : WeatherUiState()
-    data class Error(val message: String) : WeatherUiState()
+    data class Error(@StringRes val messageResId: Int) : WeatherUiState()
 }
 
 class WeatherViewModel : ViewModel() {
@@ -156,7 +158,7 @@ class WeatherViewModel : ViewModel() {
                 _uiState.value = WeatherUiState.Success(response)
             } catch (e: Exception) {
                 Log.e("WeatherApp", "Error: ${e.message}")
-                _uiState.value = WeatherUiState.Error("Не удалось загрузить данные.\nПроверьте интернет.")
+                _uiState.value = WeatherUiState.Error(R.string.error_no_internet)
             }
         }
     }
@@ -182,12 +184,12 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsState()
     // State for showing error dialog
     var showErrorDialog by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
+    var errorMessageId by remember { mutableStateOf<Int?>(null) }
 
     // Effect for handling error condition
     LaunchedEffect(state) {
         if (state is WeatherUiState.Error) {
-            errorMessage = (state as WeatherUiState.Error).message
+            errorMessageId = (state as WeatherUiState.Error).messageResId
             showErrorDialog = true
         } else {
             showErrorDialog = false
@@ -205,7 +207,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
                     .padding(16.dp)
                     .height(50.dp)
             ) {
-                Text("Перезагрузить")
+                Text(stringResource(R.string.reload))
             }
         }
     ) { paddingValues ->
@@ -225,18 +227,18 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
                 }
 
                 is WeatherUiState.Error -> {
-                    // Ошибка обрабатывается диалогом, но здесь можно показать заглушку
+                    // The error is handled by the dialog, but a placeholder can be shown here
                     Text("Нет данных", color = Color.Gray)
                 }
             }
         }
 
         // Error dialog
-        if (showErrorDialog) {
+        if (showErrorDialog && errorMessageId != null) {
             AlertDialog(
                 onDismissRequest = { showErrorDialog = false },
-                title = { Text("Ошибка") },
-                text = { Text(errorMessage) },
+                title = { Text(stringResource(R.string.error)) },
+                text = { Text(stringResource(id = errorMessageId!!)) },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -244,12 +246,12 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
                             viewModel.loadWeather()
                         }
                     ) {
-                        Text("Повторить")
+                        Text(stringResource(R.string.repeat))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showErrorDialog = false }) {
-                        Text("Отмена")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             )
@@ -260,12 +262,13 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
 @Composable
 fun WeatherContent(data: WeatherResponse) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Текущая", "Почасовая", "Прогноз (3 дня)")
+    val tabs =
+        listOf(stringResource(R.string.current), stringResource(R.string.hourly), stringResource(R.string.forecast3))
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Title
         Text(
-            text = "Москва",
+            text = stringResource(R.string.city),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
@@ -319,7 +322,7 @@ fun CurrentWeatherTab(current: CurrentWeather) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Обновлено: ${current.last_updated}",
+            text = stringResource(R.string.updated) + ": ${current.last_updated}",
             style = MaterialTheme.typography.bodySmall
         )
     }
