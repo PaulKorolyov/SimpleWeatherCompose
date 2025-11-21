@@ -185,6 +185,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
     // State for showing error dialog
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessageId by remember { mutableStateOf<Int?>(null) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     // Effect for handling error condition
     LaunchedEffect(state) {
@@ -223,7 +224,11 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
                 }
 
                 is WeatherUiState.Success -> {
-                    WeatherContent(data = currentState.data)
+                    WeatherContent(
+                        data = currentState.data,
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { selectedTabIndex = it }
+                    )
                 }
 
                 is WeatherUiState.Error -> {
@@ -260,8 +265,11 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
 }
 
 @Composable
-fun WeatherContent(data: WeatherResponse) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+fun WeatherContent(
+    data: WeatherResponse,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit
+) {
     val tabs =
         listOf(stringResource(R.string.current), stringResource(R.string.hourly), stringResource(R.string.forecast3))
 
@@ -280,7 +288,7 @@ fun WeatherContent(data: WeatherResponse) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
+                    onClick = { onTabSelected(index) },
                     text = { Text(title) }
                 )
             }
