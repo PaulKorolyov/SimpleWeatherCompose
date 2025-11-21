@@ -50,6 +50,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import net.softbird.simpleweathercompose.ui.theme.SimpleWeatherComposeTheme
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -58,7 +59,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 // ----------------------------------------------------------------
-// 1. DATA LAYER (Models)
+// DATA LAYER (Models)
 // ----------------------------------------------------------------
 
 data class WeatherResponse(
@@ -100,10 +101,9 @@ data class Hour(
 )
 
 // ----------------------------------------------------------------
-// 2. NETWORK LAYER (Retrofit)
+// NETWORK LAYER (Retrofit)
 // ----------------------------------------------------------------
 
-// Используем HTTPS, чтобы избежать проблем с безопасностью Android
 private const val BASE_URL = "https://api.weatherapi.com/v1/"
 private const val API_KEY = "fa8b3df74d4042b9aa7135114252304"
 
@@ -129,7 +129,7 @@ object RetrofitClient {
 }
 
 // ----------------------------------------------------------------
-// 3. VIEW MODEL
+// VIEW MODEL
 // ----------------------------------------------------------------
 
 sealed class WeatherUiState {
@@ -150,7 +150,7 @@ class WeatherViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
             try {
-                // Небольшая искусственная задержка, чтобы был виден индикатор загрузки
+                // A small artificial delay to make the loading indicator visible
                 delay(500)
                 val response = RetrofitClient.api.getForecast()
                 _uiState.value = WeatherUiState.Success(response)
@@ -163,14 +163,14 @@ class WeatherViewModel : ViewModel() {
 }
 
 // ----------------------------------------------------------------
-// 4. UI LAYER (Compose)
+// UI LAYER (Compose)
 // ----------------------------------------------------------------
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            SimpleWeatherComposeTheme {
                 WeatherScreen()
             }
         }
@@ -180,11 +180,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsState()
-    // Состояние для показа диалога ошибки
+    // State for showing error dialog
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Эффект для обработки состояния ошибки
+    // Effect for handling error condition
     LaunchedEffect(state) {
         if (state is WeatherUiState.Error) {
             errorMessage = (state as WeatherUiState.Error).message
@@ -194,10 +194,10 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
         }
     }
 
-    // Основной контейнер
+    // Main container
     Scaffold(
         bottomBar = {
-            // Кнопка внизу экрана
+            // Button at the bottom of the screen
             Button(
                 onClick = { viewModel.loadWeather() },
                 modifier = Modifier
@@ -231,7 +231,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel()) {
             }
         }
 
-        // Диалог ошибки
+        // Error dialog
         if (showErrorDialog) {
             AlertDialog(
                 onDismissRequest = { showErrorDialog = false },
@@ -263,7 +263,7 @@ fun WeatherContent(data: WeatherResponse) {
     val tabs = listOf("Текущая", "Почасовая", "Прогноз (3 дня)")
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Заголовок
+        // Title
         Text(
             text = "Москва",
             style = MaterialTheme.typography.headlineMedium,
@@ -272,7 +272,7 @@ fun WeatherContent(data: WeatherResponse) {
                 .padding(top = 16.dp)
         )
 
-        // Вкладки
+        // Tabs
         TabRow(selectedTabIndex = selectedTabIndex) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -283,10 +283,12 @@ fun WeatherContent(data: WeatherResponse) {
             }
         }
 
-        // Контент вкладок
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
+        // Tab content
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
             when (selectedTabIndex) {
                 0 -> CurrentWeatherTab(data.current)
                 1 -> HourlyWeatherTab(data.forecast.forecastday.firstOrNull()?.hour ?: emptyList())
@@ -340,7 +342,7 @@ fun HourlyWeatherTab(hours: List<Hour>) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Форматирование времени из "2023-11-20 14:00" в "14:00"
+                    // Formatting time from "2023-11-20 14:00" to "14:00"
                     val time = hour.time.split(" ").lastOrNull() ?: hour.time
 
                     Text(text = time, style = MaterialTheme.typography.bodyLarge)
@@ -408,7 +410,7 @@ fun DailyForecastTab(days: List<ForecastDay>) {
 
 @Composable
 fun WeatherIcon(url: String, size: androidx.compose.ui.unit.Dp) {
-    // API возвращает иконки с "//cdn...", нужно добавить "https:"
+    // The API returns icons with "//cdn...", you need to add "https:"
     val fixedUrl = if (url.startsWith("//")) "https:$url" else url
 
     AsyncImage(
@@ -419,11 +421,11 @@ fun WeatherIcon(url: String, size: androidx.compose.ui.unit.Dp) {
     )
 }
 
-// Утилита для красивой даты
+// Beautiful date
 fun formatDate(dateString: String): String {
     return try {
         val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("dd MMMM", Locale("ru"))
+        val outputFormat = SimpleDateFormat("dd MMMM", Locale.forLanguageTag("ru"))
         val date = inputFormat.parse(dateString)
         date?.let { outputFormat.format(it) } ?: dateString
     } catch (e: Exception) {
